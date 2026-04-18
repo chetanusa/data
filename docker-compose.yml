@@ -1,0 +1,114 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
+
+  airflow-init:
+    build: .
+    image: tmdb-airflow:latest
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    command: >
+      bash -c "airflow db migrate &&
+               airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true"
+
+  airflow-webserver:
+    env_file:
+      - .env
+    build: .
+    image: tmdb-airflow:latest
+    depends_on:
+      - postgres
+      - kafka
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      KAFKA_BROKER: kafka:9092
+      KAFKA_TOPIC: tmdb_movies
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
+      SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+      SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+      SNOWFLAKE_DATABASE: TMDB_DB
+      SNOWFLAKE_SCHEMA: PUBLIC
+      SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+    volumes:
+      - ./orchestration:/opt/airflow/dags
+      - ./ingestion:/opt/airflow/ingestion
+      - ./transformation:/opt/airflow/transformation
+      - ./warehouse:/opt/airflow/warehouse
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  airflow-scheduler:
+    build: .
+    image: tmdb-airflow:latest
+    depends_on:
+      - postgres
+      - kafka
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      KAFKA_BROKER: kafka:9092
+      KAFKA_TOPIC: tmdb_movies
+      TMDB_API_KEY: 65d48d6d844b63d46006eb5c1b5855b2
+      SNOWFLAKE_ACCOUNT: zeluyrb-oe16168
+      SNOWFLAKE_USER: your_snowflake_email
+      SNOWFLAKE_PASSWORD: your_snowflake_password
+      SNOWFLAKE_DATABASE: TMDB_DB
+      SNOWFLAKE_SCHEMA: PUBLIC
+      SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+    volumes:
+      - ./orchestration:/opt/airflow/dags
+      - ./ingestion:/opt/airflow/ingestion
+      - ./transformation:/opt/airflow/transformation
+      - ./warehouse:/opt/airflow/warehouse
+    command: scheduler
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin

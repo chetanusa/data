@@ -1,0 +1,12 @@
+requests
+kafka-python
+pyspark
+pandas
+snowflake-connector-python
+snowflake-connector-python[pandas]
+fastapi
+uvicorn
+apache-airflow
+python-dotenv
+prometheus-client
+pyarrow

@@ -1,0 +1,47 @@
+# Environment variables
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+
+# Data files
+*.json
+*.csv
+*.parquet
+raw_movies.json
+transformed_movies/
+
+# Airflow
+logs/
+airflow.db
+airflow.cfg
+webserver_config.py
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Snowflake
+*.snowflake
+
+# Secrets
+*secret*
+*password*
+*credentials*
