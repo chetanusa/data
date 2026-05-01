@@ -1,11 +1,26 @@
 global:
   scrape_interval: 15s
+  evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'fastapi'
+  # Prometheus itself
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:8000']
+      - targets: ['localhost:9090']
 
-  - job_name: 'kafka'
+  # Airflow metrics (if available)
+  - job_name: 'airflow'
     static_configs:
-      - targets: ['localhost:9092']
+      - targets: ['airflow-webserver:8080']
+    metrics_path: '/metrics'
+
+  # Node exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+
+  # Custom pipeline metrics on port 8000
+  - job_name: 'pipeline'
+    static_configs:
+      - targets: ['host.docker.internal:8000']
+    metrics_path: '/metrics'

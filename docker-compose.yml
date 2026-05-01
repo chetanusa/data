@@ -83,8 +83,8 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       KAFKA_BROKER: kafka:9092
       KAFKA_TOPIC: tmdb_movies
-      TMDB_API_KEY: 65d48d6d844b63d46006eb5c1b5855b2
-      SNOWFLAKE_ACCOUNT: zeluyrb-oe16168
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
       SNOWFLAKE_USER: your_snowflake_email
       SNOWFLAKE_PASSWORD: your_snowflake_password
       SNOWFLAKE_DATABASE: TMDB_DB
